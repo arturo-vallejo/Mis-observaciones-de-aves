@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Observaciones de Naturaleza</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --verde-bosque: #1a3c2a;
+      --verde-hoja: #2d6a4f;
+      --verde-claro: #52b788;
+      --verde-palido: #b7e4c7;
+      --crema: #fefae0;
+      --arena: #f4f1de;
+      --naranja: #e07a3a;
+      --gris-suave: #6c757d;
+      --sombra: 0 4px 20px rgba(26,60,42,.12);
+      --radius: 12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--arena);
+      color: #2b2b2b;
+      line-height: 1.6;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(165deg, var(--verde-bosque) 0%, var(--verde-hoja) 60%, var(--verde-claro) 100%);
+      color: var(--crema);
+      padding: 60px 32px 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%; right: -20%;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(82,183,136,.15) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -30%; left: -10%;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(254,250,224,.06) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      position: relative;
+      z-index: 1;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .hero p {
+      font-size: 15px;
+      opacity: .8;
+      max-width: 520px;
+    }
+    .hero-stats {
+      display: flex;
+      gap: 24px;
+      margin-top: 28px;
+      flex-wrap: wrap;
+    }
+    .hero-stat {
+      background: rgba(255,255,255,.1);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      padding: 14px 22px;
+      text-align: center;
+      min-width: 110px;
+    }
+    .hero-stat .num {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px;
+      font-weight: 700;
+      display: block;
+      line-height: 1.1;
+    }
+    .hero-stat .lbl {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      opacity: .7;
+      margin-top: 4px;
+      display: block;
+    }
+
+    /* ── CONTAINER ── */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* ── SECCIÓN MAPA ── */
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      color: var(--verde-bosque);
+      margin: 40px 0 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-title span {
+      font-size: 1.4rem;
+    }
+
+    #map {
+      height: 450px;
+      border-radius: var(--radius);
+      box-shadow: var(--sombra);
+      border: 3px solid white;
+    }
+
+    /* ── FILTROS ── */
+    .filters {
+      margin: 32px 0 14px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .filters label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--gris-suave);
+      margin-right: 4px;
+    }
+    .filter-btn {
+      padding: 7px 16px;
+      border: 1.5px solid #d5d0c4;
+      border-radius: 24px;
+      background: white;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      color: #555;
+      transition: all .25s ease;
+    }
+    .filter-btn:hover {
+      border-color: var(--verde-claro);
+      color: var(--verde-hoja);
+    }
+    .filter-btn.active {
+      background: var(--verde-hoja);
+      color: white;
+      border-color: var(--verde-hoja);
+    }
+    .result-count {
+      font-size: 13px;
+      color: var(--gris-suave);
+      margin-bottom: 16px;
+    }
+
+    /* ── GALERÍA ── */
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 20px;
+      padding-bottom: 60px;
+    }
+
+    .card {
+      background: white;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,.06);
+      transition: transform .3s ease, box-shadow .3s ease;
+      cursor: default;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 28px rgba(26,60,42,.14);
+    }
+
+    .card-img-wrap {
+      position: relative;
+      width: 100%;
+      height: 200px;
+      overflow: hidden;
+      background: #e8e4da;
+    }
+    .card-img-wrap img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform .4s ease;
+    }
+    .card:hover .card-img-wrap img {
+      transform: scale(1.05);
+    }
+    .card-img-wrap .no-photo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      font-size: 48px;
+      opacity: .3;
+    }
+
+    .quality-tag {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+    }
+    .quality-tag.research { background: rgba(45,106,79,.9); color: white; }
+    .quality-tag.needs_id { background: rgba(224,122,58,.9); color: white; }
+    .quality-tag.casual { background: rgba(180,180,180,.85); color: white; }
+
+    .card-body {
+      padding: 16px 18px 18px;
+    }
+    .card-common {
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--verde-bosque);
+      margin-bottom: 2px;
+      line-height: 1.3;
+    }
+    .card-common a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .card-common a:hover {
+      text-decoration: underline;
+    }
+    .card-sci {
+      font-style: italic;
+      font-size: 13px;
+      color: var(--gris-suave);
+      margin-bottom: 10px;
+    }
+    .card-meta {
+      display: flex;
+      gap: 14px;
+      font-size: 12px;
+      color: #888;
+    }
+    .card-meta span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ── LOADING ── */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      color: var(--verde-hoja);
+    }
+    .spinner {
+      width: 40px; height: 40px;
+      border: 3px solid var(--verde-palido);
+      border-top-color: var(--verde-hoja);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+      margin-bottom: 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-msg {
+      background: #fff3e0;
+      border-left: 4px solid var(--naranja);
+      padding: 16px 20px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin: 32px 0;
+      font-size: 14px;
+    }
+
+    /* ── FOOTER ── */
+    .footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: #aaa;
+      border-top: 1px solid #e5e0d5;
+    }
+    .footer a { color: var(--verde-hoja); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    /* ── LEAFLET POPUP ── */
+    .popup-photo {
+      width: 160px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .popup-name {
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--verde-bosque);
+    }
+    .popup-sci { font-style: italic; font-size: 12px; color: #888; }
+    .popup-date { font-size: 12px; color: #666; margin-top: 4px; }
+    .popup-link { font-size: 12px; }
+    .popup-link a { color: var(--verde-hoja); }
+
+    /* ── CONFIG BANNER ── */
+    .config-banner {
+      background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+      border: 2px dashed var(--naranja);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin: 40px 0;
+      text-align: center;
+    }
+    .config-banner h2 {
+      font-family: 'Playfair Display', serif;
+      color: var(--naranja);
+      margin-bottom: 12px;
+    }
+    .config-banner code {
+      background: rgba(0,0,0,.06);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .config-banner ol {
+      text-align: left;
+      max-width: 600px;
+      margin: 16px auto;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    @media (max-width: 600px) {
+      .hero { padding: 40px 20px 32px; }
+      #map { height: 300px; }
+      .gallery { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-inner">
+      <h1>🐦 Mis observaciones de naturaleza</h1>
+      <p>Registro de biodiversidad conectado en vivo a mi base de datos en Baserow.</p>
+      <div class="hero-stats" id="stats">
+        <div class="hero-stat"><span class="num" id="stat-total">—</span><span class="lbl">Observaciones</span></div>
+        <div class="hero-stat"><span class="num" id="stat-species">—</span><span class="lbl">Especies</span></div>
+        <div class="hero-stat"><span class="num" id="stat-research">—</span><span class="lbl">Research grade</span></div>
+        <div class="hero-stat"><span class="num" id="stat-geo">—</span><span class="lbl">Geolocalizadas</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- CONFIG BANNER (se oculta cuando hay datos) -->
+    <div class="config-banner" id="config-banner" style="display:none;">
+      <h2>⚙️ Configura tu sitio</h2>
+      <p>Edita el archivo <code>config.js</code> con tus datos de Baserow:</p>
+      <ol>
+        <li>Abre <code>config.js</code> en tu repositorio de GitHub</li>
+        <li>Pega tu <strong>token de API</strong> de Baserow</li>
+        <li>Escribe el <strong>ID de tu tabla</strong></li>
+        <li>Haz commit y push — ¡listo!</li>
+      </ol>
+    </div>
+
+    <!-- MAPA -->
+    <h2 class="section-title"><span>🗺️</span> Mapa de observaciones</h2>
+    <div id="map"></div>
+
+    <!-- FILTROS -->
+    <div class="filters">
+      <label>Filtrar:</label>
+      <button class="filter-btn active" onclick="filterCards('all', this)">Todas</button>
+      <button class="filter-btn" onclick="filterCards('research', this)">🟢 Research</button>
+      <button class="filter-btn" onclick="filterCards('needs_id', this)">🟠 Needs ID</button>
+      <button class="filter-btn" onclick="filterCards('casual', this)">⚪ Casual</button>
+    </div>
+    <div class="result-count" id="result-count"></div>
+
+    <!-- GALERÍA / LOADING -->
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <span>Cargando observaciones desde Baserow...</span>
+    </div>
+
+    <div class="gallery" id="gallery"></div>
+  </div>
+
+  <div class="footer">
+    Datos de <a href="https://www.inaturalist.org" target="_blank">iNaturalist</a>
+    &mdash; Base de datos en <a href="https://baserow.io" target="_blank">Baserow</a>
+    &mdash; Hospedado en <a href="https://pages.github.com" target="_blank">GitHub Pages</a>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="config.js"></script>
+  <script>
+    // ── ESTADO ──
+    let allObservations = [];
+    let map, markersLayer;
+
+    // ── INICIAR ──
+    document.addEventListener('DOMContentLoaded', init);
+
+    async function init() {
+      // Verificar configuración
+      if (!CONFIG.BASEROW_TOKEN || CONFIG.BASEROW_TOKEN === 'TU_TOKEN_AQUI' ||
+          !CONFIG.BASEROW_TABLE_ID || CONFIG.BASEROW_TABLE_ID === 'TU_TABLE_ID_AQUI') {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('config-banner').style.display = 'block';
+        initMap(19.43, -99.13, 5);
+        return;
+      }
+
+      initMap(19.43, -99.13, 5);
+
+      try {
+        allObservations = await fetchAllRows();
+        document.getElementById('loading').style.display = 'none';
+        updateStats();
+        renderGallery(allObservations);
+        plotOnMap(allObservations);
+      } catch (err) {
+        document.getElementById('loading').innerHTML =
+          `<div class="error-msg">❌ Error al conectar con Baserow: ${err.message}<br>
+           <small>Verifica tu token y table ID en <code>config.js</code></small></div>`;
+      }
+    }
+
+    // ── BASEROW API ──
+    async function fetchAllRows() {
+      let rows = [];
+      let page = 1;
+      const size = 200;
+      while (true) {
+        const url = `${CONFIG.BASEROW_URL}/api/database/rows/table/${CONFIG.BASEROW_TABLE_ID}/?user_field_names=true&size=${size}&page=${page}`;
+        const resp = await fetch(url, {
+          headers: { 'Authorization': `Token ${CONFIG.BASEROW_TOKEN}` }
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        rows = rows.concat(data.results || []);
+        if (!data.next) break;
+        page++;
+      }
+      return rows;
+    }
+
+    // ── MAPA ──
+    function initMap(lat, lng, zoom) {
+      map = L.map('map').setView([lat, lng], zoom);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://openstreetmap.org">OSM</a> &copy; <a href="https://carto.com">CARTO</a>',
+        maxZoom: 18
+      }).addTo(map);
+      markersLayer = L.layerGroup().addTo(map);
+    }
+
+    function plotOnMap(obs) {
+      markersLayer.clearLayers();
+      const colors = { research: '#2d6a4f', needs_id: '#e07a3a', casual: '#aaa' };
+      const bounds = [];
+
+      obs.forEach(o => {
+        const lat = parseFloat(o.Latitud);
+        const lng = parseFloat(o.Longitud);
+        if (isNaN(lat) || isNaN(lng)) return;
+        bounds.push([lat, lng]);
+
+        const photoHtml = o.Foto_URL
+          ? `<img src="${o.Foto_URL.replace('medium','small')}" class="popup-photo"><br>` : '';
+        const name = o.Nombre_comun || o.Nombre_cientifico || '—';
+        const quality = getQuality(o);
+
+        L.circleMarker([lat, lng], {
+          radius: 7,
+          color: colors[quality] || '#2196F3',
+          fillColor: colors[quality] || '#2196F3',
+          fillOpacity: 0.75,
+          weight: 1.5
+        }).addTo(markersLayer).bindPopup(
+          `${photoHtml}<div class="popup-name">${name}</div>
+           <div class="popup-sci">${o.Nombre_cientifico || ''}</div>
+           <div class="popup-date">📅 ${o.Fecha || '—'}</div>
+           <div class="popup-link"><a href="${o.URL_observacion || '#'}" target="_blank">Ver en iNaturalist ↗</a></div>`,
+          { maxWidth: 200 }
+        );
+      });
+
+      if (bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [30, 30] });
+      }
+    }
+
+    // ── GALERÍA ──
+    function renderGallery(obs) {
+      const gallery = document.getElementById('gallery');
+      gallery.innerHTML = '';
+
+      obs.forEach(o => {
+        const name = o.Nombre_comun || o.Nombre_cientifico || 'Sin identificar';
+        const sci = o.Nombre_cientifico || '';
+        const quality = getQuality(o);
+        const url = o.URL_observacion || '#';
+        const foto = o.Foto_URL || '';
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.dataset.quality = quality;
+
+        const imgContent = foto
+          ? `<img src="${foto}" alt="${name}" loading="lazy">`
+          : `<div class="no-photo">🌿</div>`;
+
+        card.innerHTML = `
+          <div class="card-img-wrap">
+            ${imgContent}
+            <span class="quality-tag ${quality}">${quality.replace('_',' ')}</span>
+          </div>
+          <div class="card-body">
+            <div class="card-common"><a href="${url}" target="_blank">${name}</a></div>
+            <div class="card-sci">${sci}</div>
+            <div class="card-meta">
+              <span>📅 ${o.Fecha || '—'}</span>
+              <span>📍 ${truncate(o.Lugar || '—', 25)}</span>
+            </div>
+          </div>`;
+
+        gallery.appendChild(card);
+      });
+
+      updateResultCount(obs.length);
+    }
+
+    // ── FILTROS ──
+    function filterCards(quality, btn) {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const filtered = quality === 'all'
+        ? allObservations
+        : allObservations.filter(o => getQuality(o) === quality);
+
+      renderGallery(filtered);
+      plotOnMap(filtered);
+    }
+
+    // ── ESTADÍSTICAS ──
+    function updateStats() {
+      const total = allObservations.length;
+      const species = new Set(allObservations.map(o => o.Nombre_cientifico).filter(Boolean)).size;
+      const research = allObservations.filter(o => getQuality(o) === 'research').length;
+      const geo = allObservations.filter(o => {
+        const lat = parseFloat(o.Latitud);
+        const lng = parseFloat(o.Longitud);
+        return !isNaN(lat) && !isNaN(lng);
+      }).length;
+
+      animateNumber('stat-total', total);
+      animateNumber('stat-species', species);
+      animateNumber('stat-research', research);
+      animateNumber('stat-geo', geo);
+    }
+
+    function animateNumber(id, target) {
+      const el = document.getElementById(id);
+      let current = 0;
+      const step = Math.ceil(target / 30);
+      const timer = setInterval(() => {
+        current += step;
+        if (current >= target) { current = target; clearInterval(timer); }
+        el.textContent = current;
+      }, 25);
+    }
+
+    function updateResultCount(n) {
+      document.getElementById('result-count').textContent = `Mostrando ${n} observaciones`;
+    }
+
+    // ── HELPERS ──
+    function getQuality(o) {
+      const q = o.Grado_calidad;
+      if (!q) return 'casual';
+      if (typeof q === 'object') return q.value || 'casual';
+      return q;
+    }
+
+    function truncate(str, n) {
+      return str.length > n ? str.substring(0, n) + '…' : str;
+    }
+  </script>
+</body>
+</html>
