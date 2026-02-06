@@ -6,7 +6,7 @@ const CONFIG = {
 
   // 1. Tu token de API de Baserow
   //    → Avatar (abajo-izquierda) → Settings → API tokens
-  BASEROW_TOKEN: "Hdb3eglBMI0h2C3lGGJgQXcMyBLeQNk8",
+  BASEROW_TOKEN: "UAcJwVUNg0jkLnzXfmL6eulbRuWntQds",
 
   // 2. El ID numérico de tu tabla
   //    → Abre la tabla en Baserow, mira la URL:
