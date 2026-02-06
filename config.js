@@ -12,7 +12,7 @@ const CONFIG = {
   //    → Abre la tabla en Baserow, mira la URL:
   //      https://baserow.io/database/XXX/table/YYYY
   //      El ID es YYYY
-  BASEROW_TABLE_ID: "yauGcOlmywXEow9m16Q2zYT4YoOYuA84",
+  BASEROW_TABLE_ID: "1620405",
 
   // 3. URL de la API de Baserow
   //    → Si usas Baserow en la nube, déjalo así.
